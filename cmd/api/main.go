@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"kotoba/api/internal/database"
 	"kotoba/api/internal/httpapi"
 )
 
@@ -30,8 +31,25 @@ func run(logger *slog.Logger) error {
 	if addr == "" {
 		addr = "127.0.0.1:8080"
 	}
+	var ready func(context.Context) error
+	if uri := os.Getenv("KOTOBA_MONGO_URI"); uri != "" {
+		connectCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		client, err := database.Open(connectCtx, uri)
+		cancel()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := client.Disconnect(cleanup); err != nil {
+				logger.Warn("database disconnect failed")
+			}
+		}()
+		ready = func(ctx context.Context) error { return client.Ping(ctx, nil) }
+	}
 	server := &http.Server{
-		Addr: addr, Handler: httpapi.NewRouter(logger),
+		Addr: addr, Handler: httpapi.NewRouterWithReadiness(logger, ready),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second, WriteTimeout: 10 * time.Second,
 		IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10,

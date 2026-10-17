@@ -2,6 +2,7 @@
 package httpapi
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,6 +13,11 @@ import (
 
 // NewRouter builds the local learning API. Authentication is not implemented yet.
 func NewRouter(logger *slog.Logger) *gin.Engine {
+	return NewRouterWithReadiness(logger, nil)
+}
+
+// NewRouterWithReadiness adds a dependency check without exposing driver details.
+func NewRouterWithReadiness(logger *slog.Logger, ready func(context.Context) error) *gin.Engine {
 	router := gin.New()
 	// No reverse proxy is trusted in the local-only first slice.
 	_ = router.SetTrustedProxies(nil)
@@ -30,6 +36,19 @@ func NewRouter(logger *slog.Logger) *gin.Engine {
 	}))
 	router.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "kotoba-api"})
+	})
+	router.GET("/readyz", func(c *gin.Context) {
+		if ready == nil {
+			writeError(c, http.StatusServiceUnavailable, "database_not_configured", "Database is not configured.", nil)
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+		if err := ready(ctx); err != nil {
+			writeError(c, http.StatusServiceUnavailable, "database_unavailable", "Database is unavailable.", nil)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "ready"})
 	})
 	v1 := router.Group("/api/v1")
 	v1.POST("/words/validate", validateWord)
