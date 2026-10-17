@@ -1,5 +1,7 @@
 # Kotoba API
 
+Shared product requirements, implementation status, and milestones: [Project plan](docs/project-plan.md).
+
 Dedicated Go/Gin backend for a personal Japanese wordbook with Korean meanings and an English interface. The frontend belongs in the separate kotoba-web repository.
 
 ## Run

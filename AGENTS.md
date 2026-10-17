@@ -9,3 +9,7 @@ Current endpoints: /healthz liveness, /readyz database readiness, POST /api/v1/w
 English UI/operational messages, Japanese words and readings, Korean meanings. Word capture is three steps with saving on step three. Storage endpoints, indexes, retry-safe operation identity, and actual database integration tests remain pending. Do not deduplicate solely by Japanese spelling or Korean gloss. Do not claim live MongoDB verification until run against a real instance.
 
 Update README.md with actual checks and limitations. Do not commit secrets, generated binaries, caches, or .env files. Preserve existing toolchain pins unless a change is justified.
+
+## Shared product plan
+
+Read [docs/project-plan.md](docs/project-plan.md) before product changes. It covers both repositories. Update that single backend-owned document when decisions, implemented milestones, or verification limitations change; do not create a frontend copy. Keep setup in README.md and coding guidance here.
